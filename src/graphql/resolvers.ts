@@ -2,28 +2,181 @@ import prisma from "../lib/prisma"
 
 export const resolvers = {
   Query: {
+
     products: async () => {
+
       return prisma.product.findMany({
+
         include: {
+
           category: true
         }
       })
     },
 
-    productsByCategory: async (_: unknown, { categoryName }: { categoryName: string }) => {
+    productsByCategory: async (
+
+      _: unknown,
+
+      {
+        categoryName
+
+      }: {
+
+        categoryName: string
+      }
+
+    ) => {
+
       return prisma.product.findMany({
+
         where: {
+
           category: {
+
             name: categoryName
           }
         },
+
         include: {
+
           category: true
         }
       })
+    },
+
+    lowStockProducts: async () => {
+
+      const products =
+        await prisma.product.findMany({
+
+          where: {
+
+            quantity: {
+
+              lte: 3
+            }
+          }
+        })
+
+      if (products.length === 0) {
+
+        return `
+✅ No low stock products
+`
+      }
+
+      const stockMessage =
+
+        products.map(
+
+          (p) =>
+
+            `${p.name} → ${p.quantity} left`
+
+        ).join("\n\n")
+
+      return `
+
+⚠️ LOW STOCK PRODUCTS
+
+${stockMessage}
+`
+    },
+
+    profitReport: async () => {
+
+      const bills =
+        await prisma.bill.findMany()
+
+      const expenses =
+        await prisma.expense.findMany()
+
+      let revenue = 0
+
+      let totalExpenses = 0
+
+      for (const bill of bills) {
+
+        revenue += bill.totalAmount
+      }
+
+      for (const expense of expenses) {
+
+        totalExpenses += expense.amount
+      }
+
+      const profit =
+        revenue - totalExpenses
+
+      return `
+
+💰 PROFIT REPORT
+
+Revenue: ₹${revenue}
+
+Expenses: ₹${totalExpenses}
+
+Profit: ₹${profit}
+`
+    },
+
+    salesReport: async () => {
+
+      const bills =
+        await prisma.bill.findMany()
+
+      let cash = 0
+
+      let upi = 0
+
+      let card = 0
+
+      let total = 0
+
+      for (const bill of bills) {
+
+        total += bill.totalAmount
+
+        if (
+          bill.paymentType.toLowerCase()
+          === "cash"
+        ) {
+
+          cash += bill.totalAmount
+        }
+
+        else if (
+          bill.paymentType.toLowerCase()
+          === "upi"
+        ) {
+
+          upi += bill.totalAmount
+        }
+
+        else if (
+          bill.paymentType.toLowerCase()
+          === "card"
+        ) {
+
+          card += bill.totalAmount
+        }
+      }
+
+      return `
+
+💰 SALES REPORT
+
+Cash: ₹${cash}
+
+UPI: ₹${upi}
+
+Card: ₹${card}
+
+TOTAL: ₹${total}
+`
     }
   },
-
   Mutation: {
 
     addCategory: async (_: unknown, { name }: { name: string }) => {
@@ -55,6 +208,15 @@ export const resolvers = {
           price,
           quantity,
           ...(categoryId ? { categoryId } : {})
+        }
+      })
+    },
+
+    addExpense: async (_: unknown, { title, amount }: { title: string, amount: number }) => {
+      return prisma.expense.create({
+        data: {
+          title,
+          amount
         }
       })
     },

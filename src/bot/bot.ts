@@ -383,3 +383,286 @@ Name: ${category.name}
   }
 })
 
+bot.onText(/\/sales/, async (msg) => {
+
+  const chatId = msg.chat.id
+
+  try {
+
+    const response =
+      await axios.post(
+
+        "http://localhost:4000/graphql",
+
+        {
+
+          query: `
+
+            query {
+
+              salesReport
+            }
+          `
+        }
+      )
+
+    const report =
+      response.data.data.salesReport
+
+    bot.sendMessage(
+
+      chatId,
+
+      report
+    )
+
+  } catch (error) {
+
+    console.log(error)
+
+    bot.sendMessage(
+
+      chatId,
+
+      "❌ Failed to fetch sales report"
+    )
+  }
+})
+
+bot.onText(/\/expense/, async (msg) => {
+
+  const chatId = msg.chat.id
+
+  const parts =
+    msg.text?.trim().split(/\s+/)
+
+  const title =
+    parts?.[1]
+
+  const amount =
+    Number(parts?.[2])
+
+  try {
+
+    const response =
+      await axios.post(
+
+        "http://localhost:4000/graphql",
+
+        {
+
+          query: `
+
+            mutation {
+
+              addExpense(
+
+                title: "${title}"
+
+                amount: ${amount}
+
+              ) {
+
+                id
+                title
+                amount
+              }
+            }
+          `
+        }
+      )
+
+    const expense =
+      response.data.data.addExpense
+
+    bot.sendMessage(
+
+      chatId,
+
+      `
+
+✅ Expense Added
+
+Title: ${expense.title}
+
+Amount: ₹${expense.amount}
+`
+    )
+
+  } catch (error) {
+
+    console.log(error)
+
+    bot.sendMessage(
+
+      chatId,
+
+      "❌ Failed to add expense"
+    )
+  }
+})
+
+bot.onText(/\/expense/, async (msg) => {
+
+  const chatId = msg.chat.id
+
+  const parts =
+    msg.text?.trim().split(/\s+/)
+
+  const title =
+    parts?.[1]
+
+  const amount =
+    Number(parts?.[2])
+
+  try {
+
+    const response =
+      await axios.post(
+
+        "http://localhost:4000/graphql",
+
+        {
+
+          query: `
+
+            mutation {
+
+              addExpense(
+
+                title: "${title}"
+
+                amount: ${amount}
+
+              ) {
+
+                id
+                title
+                amount
+              }
+            }
+          `
+        }
+      )
+
+    const expense =
+      response.data.data.addExpense
+
+    bot.sendMessage(
+
+      chatId,
+
+      `
+
+✅ Expense Added
+
+Title: ${expense.title}
+
+Amount: ₹${expense.amount}
+`
+    )
+
+  } catch (error) {
+
+    console.log(error)
+
+    bot.sendMessage(
+
+      chatId,
+
+      "❌ Failed to add expense"
+    )
+  }
+})
+
+bot.onText(/\/profit/, async (msg) => {
+
+  const chatId = msg.chat.id
+
+  try {
+
+    const response =
+      await axios.post(
+
+        "http://localhost:4000/graphql",
+
+        {
+
+          query: `
+
+            query {
+
+              profitReport
+            }
+          `
+        }
+      )
+
+    const report =
+      response.data.data.profitReport
+
+    bot.sendMessage(
+
+      chatId,
+
+      report
+    )
+
+  } catch (error) {
+
+    console.log(error)
+
+    bot.sendMessage(
+
+      chatId,
+
+      "❌ Failed to fetch profit report"
+    )
+  }
+})
+
+bot.onText(/\/lowstock/, async (msg) => {
+
+  const chatId = msg.chat.id
+
+  try {
+
+    const response =
+      await axios.post(
+
+        "http://localhost:4000/graphql",
+
+        {
+
+          query: `
+
+            query {
+
+              lowStockProducts
+            }
+          `
+        }
+      )
+
+    const report =
+      response.data.data.lowStockProducts
+
+    bot.sendMessage(
+
+      chatId,
+
+      report
+    )
+
+  } catch (error) {
+
+    console.log(error)
+
+    bot.sendMessage(
+
+      chatId,
+
+      "❌ Failed to fetch low stock"
+    )
+  }
+})

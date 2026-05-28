@@ -13,7 +13,7 @@ export const typeDefs = `
     category: Category
   }
 
-  type BillItem {
+  type BillItem {   
     id: ID!
     quantity: Int!
     price: Float!
@@ -37,13 +37,25 @@ export const typeDefs = `
     createdAt: String!
   }
 
-  type Query {
-    products: [Product]
-    productsByCategory(categoryName: String!): [Product]
-    bills: [Bill]
-    expenses: [Expense]
-  }
+ type Query {
 
+  products: [Product]
+
+  productsByCategory(
+    categoryName: String!
+  ): [Product]
+
+  bills: [Bill]
+
+  expenses: [Expense]
+
+  salesReport: String
+
+  profitReport: String
+
+  lowStockProducts: String!
+}
+  
   type Mutation {
     addCategory(name: String!): Category
 
