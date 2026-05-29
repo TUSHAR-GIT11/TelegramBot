@@ -10,6 +10,7 @@ export const typeDefs = `
     name: String!
     price: Float!
     quantity: Int!
+    soldCount: Int!
     category: Category
   }
 
@@ -54,6 +55,10 @@ export const typeDefs = `
   profitReport: String
 
   lowStockProducts: String!
+
+  topProducts: String
+
+  closingReport: String
 }
   
   type Mutation {
@@ -66,15 +71,21 @@ export const typeDefs = `
       categoryName: String
     ): Product
 
+    purchaseProduct(
+      name:String!
+      quantity: Int!
+      costPrice: Float!
+    ): Product
+
     billProduct(
       name: String!
       quantity: Int!
     ): Product
 
     restockProduct(
-      name:String!
-      quantity:Int!
-    ):Product
+      name: String!
+      quantity: Int!
+    ): Product
 
     multiBill(
       items: String!
@@ -93,7 +104,6 @@ export const typeDefs = `
       amount: Float!
     ): Expense
   }
-
   input BillItemInput {
     productId: Int!
     quantity: Int!

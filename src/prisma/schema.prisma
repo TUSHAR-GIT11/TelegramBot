@@ -18,6 +18,8 @@ model Product {
   name       String     @unique
   price      Float
   quantity   Int
+  soldCount Int @default(0)
+  costPrice  Float @default(0)
   categoryId Int?
   category   Category?  @relation(fields: [categoryId], references: [id])
   createdAt  DateTime   @default(now())

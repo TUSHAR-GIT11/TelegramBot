@@ -738,3 +738,76 @@ bot.onText(/\/lowstock/, async (msg) => {
     )
   }
 })
+
+// TOP PRODUCTS COMMAND
+bot.onText(/\/topproducts/, async (msg) => {
+  const chatId = msg.chat.id
+
+  try {
+    const response = await axios.post(
+      "http://localhost:4000/graphql",
+      {
+        query: `
+          query {
+            topProducts
+          }
+        `
+      }
+    )
+
+    const report = response.data.data.topProducts
+
+    bot.sendMessage(chatId, report)
+
+  } catch (error) {
+    console.log(error)
+    bot.sendMessage(chatId, "❌ Failed to fetch top products")
+  }
+})
+
+
+bot.onText(/\/closing/, async (msg) => {
+
+  const chatId = msg.chat.id
+
+  try {
+
+    const response =
+      await axios.post(
+
+        "http://localhost:4000/graphql",
+
+        {
+
+          query: `
+
+            query {
+
+              closingReport
+            }
+          `
+        }
+      )
+
+    const report =
+      response.data.data.closingReport
+
+    bot.sendMessage(
+
+      chatId,
+
+      report
+    )
+
+  } catch (error) {
+
+    console.log(error)
+
+    bot.sendMessage(
+
+      chatId,
+
+      "❌ Failed to fetch report"
+    )
+  }
+})

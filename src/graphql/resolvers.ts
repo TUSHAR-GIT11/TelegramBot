@@ -121,6 +121,43 @@ Profit: ₹${profit}
 `
     },
 
+    topProducts: async () => {      const products = await prisma.product.findMany({
+        orderBy: { soldCount: "desc" },
+        take: 5
+      })
+
+      if (products.length === 0) {
+        return "❌ No sales data yet"
+      }
+
+      const list = products
+        .map((p, i) => `${i + 1}. ${p.name} - ${p.soldCount} sold`)
+        .join("\n")
+
+      return `🏆 TOP SELLING PRODUCTS\n\n${list}`
+    },
+
+    closingReport: async () => {
+      const bills = await prisma.bill.findMany()
+      const expenses = await prisma.expense.findMany()
+
+      const lowStock = await prisma.product.count({
+        where: { quantity: { lte: 3 } }
+      })
+
+      const billCount = await prisma.bill.count()
+
+      let revenue = 0
+      let totalExpenses = 0
+
+      for (const bill of bills) revenue += bill.totalAmount
+      for (const expense of expenses) totalExpenses += expense.amount
+
+      const profit = revenue - totalExpenses
+
+      return `📊 TODAY REPORT\n\nSales: ₹${revenue}\nExpenses: ₹${totalExpenses}\nProfit: ₹${profit}\nBills Generated: ${billCount}\nLow Stock Products: ${lowStock}`
+    },
+
     salesReport: async () => {
 
       const bills =
@@ -245,118 +282,81 @@ TOTAL: ₹${total}
     },
 
     multiBill: async (
-
       _: unknown,
-
-      {
-        items,
-        paymentType
-
-      }: {
-
-        items: string
-
-        paymentType: string
-      }
-
+      { items, paymentType }: { items: string; paymentType: string }
     ) => {
-
-      const parsedItems =
-        JSON.parse(items)
+      const parsedItems = JSON.parse(items)
 
       let total = 0
-
       let billText = ""
 
       for (const item of parsedItems) {
-
-        const product =
-          await prisma.product.findFirst({
-
-            where: {
-
-              name: item.name
-            }
-          })
+        const product = await prisma.product.findFirst({
+          where: { name: item.name }
+        })
 
         // PRODUCT NOT FOUND
-
         if (!product) {
-
-          throw new Error(
-
-            `${item.name} not found`
-          )
+          throw new Error(`${item.name} not found`)
         }
 
         // STOCK CHECK
-
         if (product.quantity < item.quantity) {
-
-          throw new Error(
-
-            `${item.name} insufficient stock`
-          )
+          throw new Error(`${item.name} insufficient stock`)
         }
 
         // ITEM TOTAL
-
-        const itemTotal =
-          product.price * item.quantity
-
+        const itemTotal = product.price * item.quantity
         total += itemTotal
+        billText += `\n${product.name} x${item.quantity}\n= ₹${itemTotal}\n`
 
-        // BILL TEXT
-
-        billText += `
-
-${product.name} x${item.quantity}
-= ₹${itemTotal}
-`
-
-        // STOCK REDUCE
-
+        // STOCK REDUCE + SOLD COUNT
         await prisma.product.update({
-
-          where: {
-
-            id: product.id
-          },
-
+          where: { id: product.id },
           data: {
-
-            quantity: {
-
-              decrement: item.quantity
-            }
+            quantity: { decrement: item.quantity },
+            soldCount: { increment: item.quantity }
           }
         })
       }
 
       // SAVE BILL
-
       await prisma.bill.create({
-
-        data: {
-
-          totalAmount: total,
-
-          paymentType
-        }
+        data: { totalAmount: total, paymentType }
       })
 
       // FINAL BILL RETURN
+      return `🧾 BILL\n${billText}\nPayment: ${paymentType.toUpperCase()}\n\nTOTAL = ₹${total}`
+    },
 
-      return `
+    purchaseProduct: async(_:unknown, {name,quantity,costPrice}:{name:string, quantity:number, costPrice:number})=>{
+        const product = await prisma.product.findFirst({
+          where:{
+            name
+          }
+        })
+        if(!product){
+           return await prisma.product.create({
+             data:{
+               name,
+               quantity,
+               costPrice,
+               price:0
+             }
+           })
+        }
 
-🧾 BILL
-
-${billText}
-
-Payment: ${paymentType.toUpperCase()}
-
-TOTAL = ₹${total}
-`
+        return prisma.product.update({
+          where : {
+            id: product.id
+          },
+          data:{
+            quantity:{
+              increment:quantity
+            },
+            costPrice
+          }
+        })
     },
 
     billProduct: async (
@@ -377,7 +377,7 @@ TOTAL = ₹${total}
 
       return prisma.product.update({
         where: { id: product.id },
-        data: { quantity: { decrement: quantity } }
+        data: { quantity: { decrement: quantity }, soldCount: { increment:quantity } }
       })
     }
   }
