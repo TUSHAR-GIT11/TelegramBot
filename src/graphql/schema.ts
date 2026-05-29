@@ -11,6 +11,7 @@ export const typeDefs = `
     price: Float!
     quantity: Int!
     soldCount: Int!
+    costPrice: Float!
     category: Category
   }
 

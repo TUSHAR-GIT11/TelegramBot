@@ -811,3 +811,98 @@ bot.onText(/\/closing/, async (msg) => {
     )
   }
 })
+
+bot.onText(/\/purchase/, async (msg) => {
+
+  const chatId = msg.chat.id
+
+  const parts =
+    msg.text?.trim().split(/\s+/)
+
+  const name =
+    parts?.[1]
+
+  const quantity =
+    Number(parts?.[2])
+
+  const costPrice =
+    Number(parts?.[3])
+
+  if (!name || !quantity || !costPrice) {
+
+    return bot.sendMessage(
+
+      chatId,
+
+      "❌ Usage: /purchase productName quantity costPrice"
+    )
+  }
+
+  try {
+
+    const response =
+      await axios.post(
+
+        "http://localhost:4000/graphql",
+
+        {
+
+          query: `
+
+            mutation {
+
+              purchaseProduct(
+
+                name: "${name}"
+
+                quantity: ${quantity}
+
+                costPrice: ${costPrice}
+
+              ) {
+
+                name
+
+                quantity
+
+                costPrice
+              }
+            }
+          `
+        }
+      )
+
+    const product =
+      response.data.data.purchaseProduct
+
+    bot.sendMessage(
+
+      chatId,
+
+      `📦 PURCHASE ENTRY
+
+Product: ${product.name}
+
+Added Stock: ${quantity}
+
+Cost Price: ₹${product.costPrice}
+
+Current Stock: ${product.quantity}`
+    )
+
+  } catch (error: any) {
+
+  console.log(
+    JSON.stringify(
+      error.response?.data,
+      null,
+      2
+    )
+  )
+
+  bot.sendMessage(
+    chatId,
+    "❌ Purchase entry failed"
+  )
+}
+})
