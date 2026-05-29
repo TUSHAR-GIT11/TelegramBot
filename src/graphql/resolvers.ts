@@ -221,6 +221,29 @@ TOTAL: ₹${total}
       })
     },
 
+    restockProduct: async(_:unknown,{name,quantity}:{name:string, quantity:number})=>{
+        const product = await prisma.product.findFirst({
+           where : {
+              name
+           }
+        })
+
+        if(!product){
+          throw new Error("Product not found")
+        }
+
+        return prisma.product.update({
+          where:{
+            id:product.id
+          },
+          data:{
+            quantity:{
+              increment: quantity
+            }
+          }
+        })
+    },
+
     multiBill: async (
 
       _: unknown,

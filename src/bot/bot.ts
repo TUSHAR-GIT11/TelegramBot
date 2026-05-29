@@ -621,6 +621,78 @@ bot.onText(/\/profit/, async (msg) => {
   }
 })
 
+bot.onText(/\/restock/, async (msg) => {
+
+  const chatId = msg.chat.id
+
+  const parts =
+    msg.text?.trim().split(/\s+/)
+
+  const name =
+    parts?.[1]
+
+  const quantity =
+    Number(parts?.[2])
+
+  try {
+
+    const response =
+      await axios.post(
+
+        "http://localhost:4000/graphql",
+
+        {
+
+          query: `
+
+            mutation {
+
+              restockProduct(
+
+                name: "${name}"
+
+                quantity: ${quantity}
+
+              ) {
+
+                name
+                quantity
+              }
+            }
+          `
+        }
+      )
+
+    const product =
+      response.data.data.restockProduct
+
+    bot.sendMessage(
+
+      chatId,
+
+      `
+
+✅ Stock Restocked
+
+Product: ${product.name}
+
+Current Stock: ${product.quantity}
+`
+    )
+
+  } catch (error) {
+
+    console.log(error)
+
+    bot.sendMessage(
+
+      chatId,
+
+      "❌ Restock failed"
+    )
+  }
+})
+
 bot.onText(/\/lowstock/, async (msg) => {
 
   const chatId = msg.chat.id

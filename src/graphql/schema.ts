@@ -71,6 +71,11 @@ export const typeDefs = `
       quantity: Int!
     ): Product
 
+    restockProduct(
+      name:String!
+      quantity:Int!
+    ):Product
+
     multiBill(
       items: String!
       paymentType: String!
