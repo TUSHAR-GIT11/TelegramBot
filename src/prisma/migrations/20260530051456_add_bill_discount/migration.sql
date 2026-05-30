@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Bill" ADD COLUMN     "discount" DOUBLE PRECISION NOT NULL DEFAULT 0;

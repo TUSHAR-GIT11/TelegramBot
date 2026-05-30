@@ -281,83 +281,175 @@ TOTAL: ₹${total}
         })
     },
 
-    multiBill: async (
-      _: unknown,
-      { items, paymentType }: { items: string; paymentType: string }
-    ) => {
-      const parsedItems = JSON.parse(items)
+   multiBill: async (
 
-      let total = 0
-      let billText = ""
+  _: unknown,
 
-      for (const item of parsedItems) {
-        const product = await prisma.product.findFirst({
-          where: { name: item.name }
-        })
+  {
+    items,
+    paymentType,
+    discount = 0,
+    format = "detailed"
 
-        // PRODUCT NOT FOUND
-        if (!product) {
-          throw new Error(`${item.name} not found`)
+  }: {
+
+    items: string
+    paymentType: string
+    discount?: number
+    format?: string
+  }
+
+) => {
+
+  const parsedItems =
+    JSON.parse(items)
+
+  let total = 0
+
+  let billText = ""
+
+  for (const item of parsedItems) {
+
+    const product =
+      await prisma.product.findFirst({
+
+        where: {
+
+          name: item.name
         }
-
-        // STOCK CHECK
-        if (product.quantity < item.quantity) {
-          throw new Error(`${item.name} insufficient stock`)
-        }
-
-        // ITEM TOTAL
-        const itemTotal = product.price * item.quantity
-        total += itemTotal
-        billText += `\n${product.name} x${item.quantity}\n= ₹${itemTotal}\n`
-
-        // STOCK REDUCE + SOLD COUNT
-        await prisma.product.update({
-          where: { id: product.id },
-          data: {
-            quantity: { decrement: item.quantity },
-            soldCount: { increment: item.quantity }
-          }
-        })
-      }
-
-      // SAVE BILL
-      await prisma.bill.create({
-        data: { totalAmount: total, paymentType }
       })
 
-      // FINAL BILL RETURN
-      return `🧾 BILL\n${billText}\nPayment: ${paymentType.toUpperCase()}\n\nTOTAL = ₹${total}`
-    },
+    if (!product) {
 
-    purchaseProduct: async(_:unknown, {name,quantity,costPrice}:{name:string, quantity:number, costPrice:number})=>{
-        const product = await prisma.product.findFirst({
-          where:{
-            name
-          }
-        })
-        if(!product){
-           return await prisma.product.create({
-             data:{
-               name,
-               quantity,
-               costPrice,
-               price:0
-             }
-           })
+      throw new Error(
+
+        `${item.name} not found`
+      )
+    }
+
+    if (
+      product.quantity <
+      item.quantity
+    ) {
+
+      throw new Error(
+
+        `${item.name} insufficient stock`
+      )
+    }
+
+    const itemTotal =
+      product.price *
+      item.quantity
+
+    total += itemTotal
+
+    billText += `
+
+${product.name}
+
+Qty: ${item.quantity}
+
+Price: ₹${product.price}
+
+Total: ₹${itemTotal}
+
+----------------`
+    
+    await prisma.product.update({
+
+      where: {
+
+        id: product.id
+      },
+
+      data: {
+
+        quantity: {
+
+          decrement:
+            item.quantity
+        },
+
+        soldCount: {
+
+          increment:
+            item.quantity
         }
+      }
+    })
+  }
 
-        return prisma.product.update({
-          where : {
-            id: product.id
-          },
-          data:{
-            quantity:{
-              increment:quantity
-            },
-            costPrice
-          }
-        })
-    },
+  const discountAmount =
+    (total * discount) / 100
+
+  const finalAmount =
+    total - discountAmount
+
+  await prisma.bill.create({
+
+    data: {
+
+      totalAmount:
+        finalAmount,
+
+      paymentType,
+
+      discount
+    }
+  })
+
+  const detailedBill = `
+
+🧾 DETAILED BILL
+
+${billText}
+
+Subtotal: ₹${total}
+
+Discount: ${discount}%
+
+Discount Amount: ₹${discountAmount}
+
+Final Amount: ₹${finalAmount}
+
+Payment: ${paymentType.toUpperCase()}
+`
+
+  const fullBill = `
+
+🏪 STOCK MANAGEMENT SYSTEM
+
+🧾 INVOICE
+
+Date: ${new Date().toLocaleDateString()}
+
+================================
+
+${billText}
+
+================================
+
+Subtotal: ₹${total}
+
+Discount: ${discount}%
+
+Discount Amount: ₹${discountAmount}
+
+Final Amount: ₹${finalAmount}
+
+Payment: ${paymentType.toUpperCase()}
+
+Thank You For Shopping 🙏
+`
+
+  if (format === "full") {
+
+    return fullBill
+  }
+
+  return detailedBill
+},
 
     billProduct: async (
       _: unknown,

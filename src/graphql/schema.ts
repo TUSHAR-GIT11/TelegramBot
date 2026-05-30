@@ -91,6 +91,8 @@ export const typeDefs = `
     multiBill(
       items: String!
       paymentType: String!
+      discount: Float
+      format: String
     ): String
 
     createBill(

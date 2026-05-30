@@ -243,8 +243,27 @@ bot.onText(/\/bill/, async (msg) => {
   const parts =
     msg.text?.trim().split(/\s+/) ?? []
 
-  const paymentType =
+  if (parts.length < 6) {
+
+    return bot.sendMessage(
+
+      chatId,
+
+      "❌ Usage:\n/bill bread 2 cash 0 detailed\nor\n/bill bread 2 GreenTea 1 upi 15 full"
+    )
+  }
+
+  const format =
     parts[parts.length - 1]
+
+  const discount =
+    Number(parts[parts.length - 2])
+
+  const paymentType =
+    parts[parts.length - 3]
+
+  const endIndex =
+    parts.length - 3
 
   const items = []
 
@@ -252,7 +271,7 @@ bot.onText(/\/bill/, async (msg) => {
 
     let i = 1;
 
-    i < parts.length - 1;
+    i < endIndex;
 
     i += 2
 
@@ -265,6 +284,8 @@ bot.onText(/\/bill/, async (msg) => {
       quantity: Number(parts[i + 1])
     })
   }
+
+  
 
   try {
 
@@ -285,6 +306,10 @@ bot.onText(/\/bill/, async (msg) => {
 
                 paymentType: "${paymentType}"
 
+                discount: ${discount}
+
+                format: "${format}"
+
               )
             }
           `
@@ -295,8 +320,17 @@ bot.onText(/\/bill/, async (msg) => {
       response.data.data.multiBill
 
     if (!bill) {
-      const errMsg = response.data.errors?.[0]?.message || "Unknown error"
-      return bot.sendMessage(chatId, `❌ Failed: ${errMsg}`)
+
+      const errMsg =
+        response.data.errors?.[0]?.message ||
+        "Unknown error"
+
+      return bot.sendMessage(
+
+        chatId,
+
+        `❌ Failed: ${errMsg}`
+      )
     }
 
     bot.sendMessage(

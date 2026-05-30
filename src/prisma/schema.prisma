@@ -30,6 +30,7 @@ model Bill {
   id          Int        @id @default(autoincrement())
   totalAmount Float
   paymentType String
+  discount    Float      @default(0)
   createdAt   DateTime   @default(now())
   items       BillItem[]
 }
