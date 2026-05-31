@@ -28,6 +28,7 @@ export const typeDefs = `
     totalAmount: Float!
     paymentType: String!
     discount: Float!
+    isPaid: Boolean!
     createdAt: String!
     items: [BillItem]
   }
@@ -60,6 +61,8 @@ export const typeDefs = `
   topProducts: String
 
   closingReport: String
+
+  pendingPayments: String
 }
   
   type Mutation {
@@ -70,6 +73,7 @@ export const typeDefs = `
       price: Float!
       quantity: Int!
       categoryName: String
+      packaging:  String
     ): Product
 
     purchaseProduct(
@@ -92,7 +96,12 @@ export const typeDefs = `
       items: String!
       paymentType: String!
       discount: Float
+      customerName: String
       format: String
+    ): String
+
+    markPaid(
+      billId: Int!
     ): String
 
     createBill(

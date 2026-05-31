@@ -21,18 +21,21 @@ model Product {
   soldCount Int @default(0)
   costPrice  Float @default(0)
   categoryId Int?
+  packaging  String?
   category   Category?  @relation(fields: [categoryId], references: [id])
   createdAt  DateTime   @default(now())
   billItems  BillItem[]
 }
 
 model Bill {
-  id          Int        @id @default(autoincrement())
-  totalAmount Float
-  paymentType String
-  discount    Float      @default(0)
-  createdAt   DateTime   @default(now())
-  items       BillItem[]
+  id           Int        @id @default(autoincrement())
+  totalAmount  Float
+  paymentType  String
+  discount     Float      @default(0)
+  customerName String?
+  isPaid       Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  items        BillItem[]
 }
 
 model BillItem {

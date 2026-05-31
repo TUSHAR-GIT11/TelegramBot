@@ -137,6 +137,27 @@ Profit: ₹${profit}
       return `🏆 TOP SELLING PRODUCTS\n\n${list}`
     },
 
+    pendingPayments: async () => {
+      const pending = await prisma.bill.findMany({
+        where: { isPaid: false },
+        orderBy: { createdAt: "desc" }
+      })
+
+      if (pending.length === 0) {
+        return "✅ No pending payments"
+      }
+
+      const list = pending
+        .map((b, i) =>
+          `${i + 1}. ${b.customerName || "Unknown"}\n   Amount: ₹${b.totalAmount}\n   ID: #${b.id}\n   Date: ${b.createdAt.toLocaleDateString("en-IN")}`
+        )
+        .join("\n\n")
+
+      const total = pending.reduce((sum, b) => sum + b.totalAmount, 0)
+
+      return `💳 PENDING PAYMENTS\n\n${list}\n\n─────────────\nTotal Pending: ₹${total}`
+    },
+
     closingReport: async () => {
       const bills = await prisma.bill.findMany()
       const expenses = await prisma.expense.findMany()
@@ -223,7 +244,7 @@ TOTAL: ₹${total}
         }
       })
     },
-    addProduct: async (_: unknown, { name, price, quantity, categoryName }: { name: string, price: number, quantity: number, categoryName?: string }) => {
+    addProduct: async (_: unknown, { name, price, quantity, categoryName, packaging }: { name: string, price: number, quantity: number, categoryName?: string, packaging?:string }) => {
 
       let categoryId: number | undefined = undefined
 
@@ -239,11 +260,12 @@ TOTAL: ₹${total}
 
       return prisma.product.upsert({
         where: { name },
-        update: { price, quantity },
+        update: { price, quantity,packaging },
         create: {
           name,
           price,
           quantity,
+          packaging,
           ...(categoryId ? { categoryId } : {})
         }
       })
@@ -289,7 +311,8 @@ TOTAL: ₹${total}
     items,
     paymentType,
     discount = 0,
-    format = "detailed"
+    format = "detailed",
+    customerName
 
   }: {
 
@@ -297,6 +320,7 @@ TOTAL: ₹${total}
     paymentType: string
     discount?: number
     format?: string
+    customerName?: string
   }
 
 ) => {
@@ -395,7 +419,11 @@ Total: ₹${itemTotal}
 
       paymentType,
 
-      discount
+      discount,
+
+      customerName: customerName || null,
+
+      isPaid: paymentType.toLowerCase() !== "credit"
     }
   })
 
@@ -450,6 +478,19 @@ Thank You For Shopping 🙏
 
   return detailedBill
 },
+
+    markPaid: async (_: unknown, { billId }: { billId: number }) => {
+      const bill = await prisma.bill.findUnique({ where: { id: billId } })
+      if (!bill) throw new Error("Bill not found")
+      if (bill.isPaid) return "✅ Already marked as paid"
+
+      await prisma.bill.update({
+        where: { id: billId },
+        data: { isPaid: true, paymentType: "cash" }
+      })
+
+      return `✅ Payment received!\nCustomer: ${bill.customerName || "Unknown"}\nAmount: ₹${bill.totalAmount}`
+    },
 
     billProduct: async (
       _: unknown,
