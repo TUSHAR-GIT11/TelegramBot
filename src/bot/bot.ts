@@ -268,10 +268,19 @@ bot.onText(/\/start/, (msg) => {
             { text: "� Profit Report", callback_data: "menu_profit" }
           ],
           [
-            { text: "💳 Pending Payments", callback_data: "menu_pending" },
-            { text: "⚠️ Low Stock", callback_data: "menu_lowstock" }
+            { text: "� Sales Report", callback_data: "menu_sales" },
+            { text: "📄 Bill History", callback_data: "menu_billhistory" }
           ],
           [
+            { text: "💸 Add Expense", callback_data: "menu_expense" },
+            { text: "📊 Today's Report", callback_data: "menu_report" }
+          ],
+          [
+            { text: "📈 Profit Report", callback_data: "menu_profit" },
+            { text: "💳 Pending Payments", callback_data: "menu_pending" }
+          ],
+          [
+            { text: "⚠️ Low Stock", callback_data: "menu_lowstock" },
             { text: "🏆 Top Products", callback_data: "menu_topproducts" }
           ]
         ]
@@ -311,6 +320,15 @@ bot.on("callback_query", (query) => {
     case "menu_bill":
       setState(chatId, "bill_product_name", { items: [] })
       bot.sendMessage(chatId, `🧾 *Create Bill*\n\nProduct Name?`, { parse_mode: "Markdown" })
+      break
+
+    case "menu_billhistory":
+      axios.post("http://localhost:4000/graphql", {
+        query: `query { billHistory }`
+      }).then(res => {
+        const report = res.data.data.billHistory
+        bot.sendMessage(chatId, report || "📄 No bills found")
+      }).catch(() => bot.sendMessage(chatId, "❌ Failed to fetch bill history"))
       break
 
     case "menu_sales":

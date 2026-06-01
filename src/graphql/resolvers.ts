@@ -137,6 +137,29 @@ Profit: ₹${profit}
       return `🏆 TOP SELLING PRODUCTS\n\n${list}`
     },
 
+    billHistory: async () => {
+      const bills = await prisma.bill.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 10
+      })
+
+      if (bills.length === 0) {
+        return "📄 No bills found"
+      }
+
+      let report = "📄 BILL HISTORY\n\n"
+
+      bills.forEach((bill, index) => {
+        report +=
+          `${index + 1}. Bill #${bill.id}\n` +
+          `Amount: ₹${bill.totalAmount}\n` +
+          `Payment: ${bill.paymentType.toUpperCase()}\n` +
+          `Date: ${bill.createdAt.toLocaleDateString("en-IN")}\n\n`
+      })
+
+      return report.trim()
+    },
+
     pendingPayments: async () => {
       const pending = await prisma.bill.findMany({
         where: { isPaid: false },

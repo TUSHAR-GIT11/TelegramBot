@@ -63,6 +63,7 @@ export const typeDefs = `
   closingReport: String
 
   pendingPayments: String
+  billHistory: String
 }
   
   type Mutation {
