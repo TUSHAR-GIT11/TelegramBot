@@ -26,6 +26,7 @@ type Step =
   | "expense_title" | "expense_amount"
   | "restock_name" | "restock_qty"
   | "markpaid_id"
+  | "billsbydate_input"
 
 interface UserState {
   step: Step
@@ -183,6 +184,24 @@ bot.on("message", async (msg) => {
       break
     }
 
+    case "billsbydate_input": {
+      clearState(chatId)
+      try {
+        const res = await axios.post(GRAPHQL_URL, {
+          query: `query { billsByDate(date: "${text}") }`
+        })
+        const report = res.data.data.billsByDate
+        if (!report) {
+          const err = res.data.errors?.[0]?.message || "Unknown error"
+          return bot.sendMessage(chatId, `❌ ${err}`)
+        }
+        bot.sendMessage(chatId, report)
+      } catch (e) {
+        bot.sendMessage(chatId, "❌ Failed to fetch bills")
+      }
+      break
+    }
+
     // ── RESTOCK FLOW ──
     case "restock_name": {
       setState(chatId, "restock_qty", { name: text })
@@ -322,14 +341,11 @@ bot.on("callback_query", (query) => {
       bot.sendMessage(chatId, `🧾 *Create Bill*\n\nProduct Name?`, { parse_mode: "Markdown" })
       break
 
-    case "menu_billhistory":
-      axios.post("http://localhost:4000/graphql", {
-        query: `query { billHistory }`
-      }).then(res => {
-        const report = res.data.data.billHistory
-        bot.sendMessage(chatId, report || "📄 No bills found")
-      }).catch(() => bot.sendMessage(chatId, "❌ Failed to fetch bill history"))
+    case "menu_billhistory": {
+      setState(chatId, "billsbydate_input")
+      bot.sendMessage(chatId, `📅 Kis din ki history chahiye?\n\nDate enter karo (DD/MM/YYYY)\nExample: 01/06/2026`)
       break
+    }
 
     case "menu_sales":
       axios.post("http://localhost:4000/graphql", {

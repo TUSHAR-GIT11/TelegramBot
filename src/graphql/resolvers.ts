@@ -121,7 +121,8 @@ Profit: ₹${profit}
 `
     },
 
-    topProducts: async () => {      const products = await prisma.product.findMany({
+    topProducts: async () => {
+      const products = await prisma.product.findMany({
         orderBy: { soldCount: "desc" },
         take: 5
       })
@@ -135,6 +136,50 @@ Profit: ₹${profit}
         .join("\n")
 
       return `🏆 TOP SELLING PRODUCTS\n\n${list}`
+    },
+
+    billsByDate: async (_: unknown, { date }: { date: string }) => {
+      let targetDate: Date
+
+      if (date.toLowerCase() === "today") {
+        targetDate = new Date()
+      } else {
+        const parts = date.split(/[\/\-]/)
+        targetDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`)
+      }
+
+      const start = new Date(targetDate)
+      start.setHours(0, 0, 0, 0)
+
+      const end = new Date(targetDate)
+      end.setHours(23, 59, 59, 999)
+
+      const bills = await prisma.bill.findMany({
+        where: { createdAt: { gte: start, lte: end } },
+        orderBy: { createdAt: "desc" }
+      })
+
+      if (bills.length === 0) {
+        return `📅 No bills found for ${targetDate.toLocaleDateString("en-IN")}`
+      }
+
+      let total = 0
+      let report = `📅 BILLS - ${targetDate.toLocaleDateString("en-IN")}\n\n`
+
+      bills.forEach((bill, i) => {
+        total += bill.totalAmount
+        report +=
+          `${i + 1}. Bill #${bill.id}\n` +
+          `   Amount: ₹${bill.totalAmount}\n` +
+          `   Payment: ${bill.paymentType.toUpperCase()}\n` +
+          `   Status: ${(bill as any).isPaid ? "✅ Paid" : "⏳ Pending"}\n\n`
+      })
+
+      report += `─────────────\n`
+      report += `Total Bills: ${bills.length}\n`
+      report += `Total Sales: ₹${total}`
+
+      return report
     },
 
     billHistory: async () => {
@@ -267,7 +312,7 @@ TOTAL: ₹${total}
         }
       })
     },
-    addProduct: async (_: unknown, { name, price, quantity, categoryName, packaging }: { name: string, price: number, quantity: number, categoryName?: string, packaging?:string }) => {
+    addProduct: async (_: unknown, { name, price, quantity, categoryName, packaging }: { name: string, price: number, quantity: number, categoryName?: string, packaging?: string }) => {
 
       let categoryId: number | undefined = undefined
 
@@ -283,7 +328,7 @@ TOTAL: ₹${total}
 
       return prisma.product.upsert({
         where: { name },
-        update: { price, quantity,packaging },
+        update: { price, quantity, packaging },
         create: {
           name,
           price,
@@ -303,95 +348,95 @@ TOTAL: ₹${total}
       })
     },
 
-    restockProduct: async(_:unknown,{name,quantity}:{name:string, quantity:number})=>{
-        const product = await prisma.product.findFirst({
-           where : {
-              name
-           }
-        })
-
-        if(!product){
-          throw new Error("Product not found")
-        }
-
-        return prisma.product.update({
-          where:{
-            id:product.id
-          },
-          data:{
-            quantity:{
-              increment: quantity
-            }
-          }
-        })
-    },
-
-   multiBill: async (
-
-  _: unknown,
-
-  {
-    items,
-    paymentType,
-    discount = 0,
-    format = "detailed",
-    customerName
-
-  }: {
-
-    items: string
-    paymentType: string
-    discount?: number
-    format?: string
-    customerName?: string
-  }
-
-) => {
-
-  const parsedItems =
-    JSON.parse(items)
-
-  let total = 0
-
-  let billText = ""
-
-  for (const item of parsedItems) {
-
-    const product =
-      await prisma.product.findFirst({
-
+    restockProduct: async (_: unknown, { name, quantity }: { name: string, quantity: number }) => {
+      const product = await prisma.product.findFirst({
         where: {
-
-          name: item.name
+          name
         }
       })
 
-    if (!product) {
+      if (!product) {
+        throw new Error("Product not found")
+      }
 
-      throw new Error(
+      return prisma.product.update({
+        where: {
+          id: product.id
+        },
+        data: {
+          quantity: {
+            increment: quantity
+          }
+        }
+      })
+    },
 
-        `${item.name} not found`
-      )
-    }
+    multiBill: async (
 
-    if (
-      product.quantity <
-      item.quantity
-    ) {
+      _: unknown,
 
-      throw new Error(
+      {
+        items,
+        paymentType,
+        discount = 0,
+        format = "detailed",
+        customerName
 
-        `${item.name} insufficient stock`
-      )
-    }
+      }: {
 
-    const itemTotal =
-      product.price *
-      item.quantity
+        items: string
+        paymentType: string
+        discount?: number
+        format?: string
+        customerName?: string
+      }
 
-    total += itemTotal
+    ) => {
 
-    billText += `
+      const parsedItems =
+        JSON.parse(items)
+
+      let total = 0
+
+      let billText = ""
+
+      for (const item of parsedItems) {
+
+        const product =
+          await prisma.product.findFirst({
+
+            where: {
+
+              name: item.name
+            }
+          })
+
+        if (!product) {
+
+          throw new Error(
+
+            `${item.name} not found`
+          )
+        }
+
+        if (
+          product.quantity <
+          item.quantity
+        ) {
+
+          throw new Error(
+
+            `${item.name} insufficient stock`
+          )
+        }
+
+        const itemTotal =
+          product.price *
+          item.quantity
+
+        total += itemTotal
+
+        billText += `
 
 ${product.name}
 
@@ -402,55 +447,55 @@ Price: ₹${product.price}
 Total: ₹${itemTotal}
 
 ----------------`
-    
-    await prisma.product.update({
 
-      where: {
+        await prisma.product.update({
 
-        id: product.id
-      },
+          where: {
 
-      data: {
+            id: product.id
+          },
 
-        quantity: {
+          data: {
 
-          decrement:
-            item.quantity
-        },
+            quantity: {
 
-        soldCount: {
+              decrement:
+                item.quantity
+            },
 
-          increment:
-            item.quantity
-        }
+            soldCount: {
+
+              increment:
+                item.quantity
+            }
+          }
+        })
       }
-    })
-  }
 
-  const discountAmount =
-    (total * discount) / 100
+      const discountAmount =
+        (total * discount) / 100
 
-  const finalAmount =
-    total - discountAmount
+      const finalAmount =
+        total - discountAmount
 
-  await prisma.bill.create({
+      await prisma.bill.create({
 
-    data: {
+        data: {
 
-      totalAmount:
-        finalAmount,
+          totalAmount:
+            finalAmount,
 
-      paymentType,
+          paymentType,
 
-      discount,
+          discount,
 
-      customerName: customerName || null,
+          customerName: customerName || null,
 
-      isPaid: paymentType.toLowerCase() !== "credit"
-    }
-  })
+          isPaid: paymentType.toLowerCase() !== "credit"
+        }
+      })
 
-  const detailedBill = `
+      const detailedBill = `
 
 🧾 DETAILED BILL
 
@@ -467,7 +512,7 @@ Final Amount: ₹${finalAmount}
 Payment: ${paymentType.toUpperCase()}
 `
 
-  const fullBill = `
+      const fullBill = `
 
 🏪 STOCK MANAGEMENT SYSTEM
 
@@ -494,13 +539,13 @@ Payment: ${paymentType.toUpperCase()}
 Thank You For Shopping 🙏
 `
 
-  if (format === "full") {
+      if (format === "full") {
 
-    return fullBill
-  }
+        return fullBill
+      }
 
-  return detailedBill
-},
+      return detailedBill
+    },
 
     markPaid: async (_: unknown, { billId }: { billId: number }) => {
       const bill = await prisma.bill.findUnique({ where: { id: billId } })
@@ -533,7 +578,7 @@ Thank You For Shopping 🙏
 
       return prisma.product.update({
         where: { id: product.id },
-        data: { quantity: { decrement: quantity }, soldCount: { increment:quantity } }
+        data: { quantity: { decrement: quantity }, soldCount: { increment: quantity } }
       })
     }
   }
