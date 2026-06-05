@@ -145,7 +145,14 @@ Profit: ₹${profit}
         targetDate = new Date()
       } else {
         const parts = date.split(/[\/\-]/)
-        targetDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`)
+        if (parts.length !== 3) {
+          throw new Error(`Invalid date format: "${date}". Expected DD/MM/YYYY or DD-MM-YYYY.`)
+        }
+        const [day, month, year] = parts
+        targetDate = new Date(`${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`)
+        if (isNaN(targetDate.getTime())) {
+          throw new Error(`Invalid date: "${date}". Expected DD/MM/YYYY or DD-MM-YYYY.`)
+        }
       }
 
       const start = new Date(targetDate)
