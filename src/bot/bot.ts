@@ -185,10 +185,23 @@ bot.on("message", async (msg) => {
     }
 
     case "billsbydate_input": {
+      // Accept formats: DD/MM/YYYY, DD-MM-YYYY, or DDMMYYYY (8 digits)
+      let normalizedDate = text
+
+      if (/^\d{8}$/.test(text)) {
+        // DDMMYYYY → DD/MM/YYYY
+        normalizedDate = `${text.slice(0, 2)}/${text.slice(2, 4)}/${text.slice(4, 8)}`
+      }
+
+      // Validate: must be DD/MM/YYYY or DD-MM-YYYY
+      if (!/^\d{2}[\/\-]\d{2}[\/\-]\d{4}$/.test(normalizedDate)) {
+        return bot.sendMessage(chatId, `❌ Invalid date format!\n\nSahi format:\n• DD/MM/YYYY → 31/05/2026\n• DD-MM-YYYY → 31-05-2026\n• DDMMYYYY   → 31052026`)
+      }
+
       clearState(chatId)
       try {
         const res = await axios.post(GRAPHQL_URL, {
-          query: `query { billsByDate(date: "${text}") }`
+          query: `query { billsByDate(date: "${normalizedDate}") }`
         })
         const report = res.data.data.billsByDate
         if (!report) {
@@ -343,7 +356,7 @@ bot.on("callback_query", (query) => {
 
     case "menu_billhistory": {
       setState(chatId, "billsbydate_input")
-      bot.sendMessage(chatId, `📅 Kis din ki history chahiye?\n\nDate enter karo (DD/MM/YYYY)\nExample: 01/06/2026`)
+      bot.sendMessage(chatId, `📅 Enter date (DD/MM/YYYY)\nExample: 01/06/2026`)
       break
     }
 
